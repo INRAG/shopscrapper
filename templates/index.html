@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+
+    <!-- Webpage Title -->
+    <title>Hello, world!</title>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <!-- JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+
+    <!-- 구글폰트 -->
+    <link href="https://fonts.googleapis.com/css?family=Stylish&display=swap" rel="stylesheet">
+
+    <title> SHOP.SCRAPPER! </title>
+
+    <!-- style -->
+        <style type="text/css">
+            * {
+                font-family: "Stylish", sans-serif;
+            }
+
+            .wrap {
+                width: 900px;
+                margin: auto;
+            }
+
+            .comment {
+                color: goldenrod;
+                font-weight: lighter;
+            }
+            .price {
+                color: gold;
+                font-weight: lighter;
+            }
+            .wprice {
+                color: rosybrown;
+                font-weight: bold;
+            }
+
+            #post-box {
+                width: 500px;
+                margin: 20px auto;
+                padding: 50px;
+                border: black solid;
+                border-radius: 5px;
+            }
+        </style>
+
+    <script>
+      // 로딩 후 바로 실행
+      $(document).ready(function(){
+                $("#cards-box").html("");
+                showArticles();
+          if ( $.cookie('mytoken') == undefined ) {
+            // mytoken이라는 값으로 쿠키가 없으면, 로그인 창으로 이동시킵니다.
+            alert('먼저 로그인을 해주세요')
+            window.location.href='/login'
+          } else {
+            // 쿠기가 있으면, 유저 정보를 불러옵니다.
+            load_user_info()
+          }
+      });
+
+      // 쿠키에 가지고 있는 token을 헤더에 담아서 보냅니다.
+      function load_user_info(){
+        $.ajax({
+          type: "GET",
+          url: "/api/nick",
+          headers: { 'token_give' : $.cookie('mytoken') },
+          data: {},
+          success: function(response){
+            if (response['result'] == 'success'){
+              // 올바른 결과값을 받으면 nickname,userid를 입력해줍니다.
+              $('#nickname').text(response['nickname'])
+              $('#userid').text(response['userid'])
+            } else{
+              // 에러가 나면 메시지를 띄우고 로그인 창으로 이동합니다.
+              alert(response['msg'])
+              window.location.href='/login'
+            }
+          }
+        })
+      }
+
+      // 로그아웃은 내가 가지고 있는 토큰만 쿠키에서 없애면 됩니다.
+      function logout(){
+        $.removeCookie('mytoken');
+        alert('로그아웃!')
+        window.location.href='/login'
+      }
+
+      // 포스트 및 쇼
+      function postArticle() {
+        // 1.유저가 입력한 데이터 가져오기
+        let url = $("#post-url").val()
+        let comment = $("#post-comment").val()
+        let wprice = $("#post-wanted-price").val()
+        let userid = $("#userid").text()
+
+        $.ajax({
+          type: "POST",
+          url: "/postcard",
+          data: {url_give: url, comment_give: comment, wprice_give: wprice,userid_give: userid},
+          success: function (response) { // 성공하면
+            if (response["result"] == "success") {
+              alert(response["msg"]);
+              window.location.reload();
+            } else {
+              alert("서버오류");
+            }
+
+          }
+        })
+      }
+
+      function showArticles() {
+        $.ajax({
+          type: "GET",
+          url: "/viewcard",
+          data: {userid_give: $("#userid").text()},
+          success: function (response) {
+            if (response["result"] == "success") {
+              alert(response["msg"]);
+              let articles=response["article"];
+              for(let i=0;i<articles.length;i++)
+              {
+                makeCard(articles[i]["url"],articles[i]["title"],articles[i]["desc"],articles[i]["img"],articles[i]["site"],articles[i]["price"],articles[i]["wprice"],articles[i]["comment"])
+              }
+            }
+            alert("ss")
+          }
+        })
+      }
+
+      function openClose() {
+        // id 값 post-box의 display 값이 block 이면(= 눈에 보이면)
+        if ($("#post-box").css("display") == "block") {
+          // post-box를 가리고
+          $("#post-box").hide();
+          // 다시 버튼을 클릭하면, 박스 열기를 할 수 있게 텍스트 바꿔두기
+          $("#btn-post-box").text("글작성 열기");
+        } else {
+          // 아니면(눈에 보이지 않으면) post-box를 펴라
+          $("#post-box").show();
+          // 다시 버튼을 클릭하면, 박스 닫기를 할 수 있게 텍스트 바꿔두기
+          $("#btn-post-box").text("글작 닫기");
+        }
+      }
+
+      //
+      function makeCard(url, title, desc, img, site, price, wprice, comment) {
+        let temp_html = `<div class="card">
+                        <img class="card-img-top" src="${img}" alt="Card image cap">
+                        <div class="card-body">
+                        <a href="${url}" target="_blank" class="card-title">${title}</a>
+                        <p class="card-text">${desc}</p>
+                        <p class="card-text site">${site}</p>
+                        <p class="card-text site">${price}</p>
+                        <p class="card-text site">${wprice}</p>
+                        <p class="card-text comment">${comment}</p>
+                        </div>
+                    </div>`;
+        $("#cards-box").append(temp_html);
+      }
+
+
+
+    </script>
+
+  </head>
+  <body>
+    <p>
+    </p>
+    <h5>나의 닉네임은: <span id="nickname"></span></h5>
+    <h6>나의 아이디는: <span id="userid"></span></h6>
+    <button type="button" class="btn btn-danger" onclick="logout()">로그아웃하기</button>
+
+    <button onclick="openClose()" id="btn-post-box" type="button" class="btn btn-primary">포스팅 박스 열기</button>
+    <div id="post-box" class="form-post" style="display:none">
+      <div>
+        <div class="form-group">
+          <label for="post-url">포스트 URL</label>
+          <input id="post-url" class="form-control" placeholder="">
+        </div>
+        <div class="form-group">
+          <label for="post-comment">코멘트(html에디터 대체요망)</label>
+          <textarea id="post-comment" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="post-wanted-price">희망가격</label>
+          <textarea id="post-wanted-price" class="form-control" rows="3"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="postArticle()">저장하기</button>
+      </div>
+    </div>
+
+
+  </body>
+</html>
