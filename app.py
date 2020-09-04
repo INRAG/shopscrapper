@@ -13,7 +13,8 @@ from pymongo import MongoClient
 client = MongoClient('localhost', 27017)
 db = client.dbshopscrapper
 
-UPLOAD_DIR = "/Users/rocky/Desktop/sparta/projects/shopscrapper/img/"
+# static안에다 이미지 업로드 하는 이유는 이미지를 url로 바로 읽을 수 있음.
+UPLOAD_DIR = "/Users/rocky/Desktop/sparta/projects/shopscrapper/static/upload"
 app.config['UPLOAD_DIR'] = UPLOAD_DIR
 
 
@@ -74,7 +75,7 @@ def post_shopinfo():
 
 @app.route('/viewcard', methods=['GET'])
 def read_articles():
-    # 1. mongoDB에서 _id 값을 제외한 모든 데이터 조회해오기(Read)
+    # 1. mongoDB에서 _id,userid 값을 제외한 모든 데이터 조회해오기(Read)
     userid = request.args.get("userid_give")
     result = list(db.article.find({'userid': userid}, {'_id': 0, 'userid': 0}))
     # 2. articles라는 키 값으로 articles 정보 보내주기
@@ -85,11 +86,11 @@ def read_articles():
 @app.route('/file-upload', methods=['GET', 'POST'])
 def upload_files():
     if request.method == 'POST':
-        f = request.files['file']
+        f = request.files['upload']
         fname = secure_filename(f.filename)
         path = os.path.join(app.config['UPLOAD_DIR'], fname)
         f.save(path)
-        return 'File upload complete (%s)' % path
+        return jsonify({'url': 'http://localhost:5000/static/upload/'+fname})
 
 
 # ** 로그인 및 회원가입 분 **
