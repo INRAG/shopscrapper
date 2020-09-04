@@ -1,8 +1,10 @@
+import os
 import urllib
 import tldextract
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 import requests
 from bs4 import BeautifulSoup
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -10,6 +12,9 @@ from pymongo import MongoClient
 
 client = MongoClient('localhost', 27017)
 db = client.dbshopscrapper
+
+UPLOAD_DIR = "/Users/rocky/Desktop/sparta/projects/shopscrapper/img/"
+app.config['UPLOAD_DIR'] = UPLOAD_DIR
 
 
 # ** 메인 기능 **
@@ -20,9 +25,6 @@ def post_shopinfo():
     comment_receive = request.form['comment_give']  # 클라이언트로부터 comment를 받는 부분
     userid_receive = request.form['userid_give']  # 클라이언트로부터 userid를 받는 부분 (* 원래 제대로 하려면 로그인 한 사용자에 저장된 게시물만 보이도록 해야 함)
     wprice_receive = request.form['wprice_give']  # 클라이언트로부터 wprice를 받는 부분
-
-    print("xxx1")
-    # 2. meta tag를 스크래핑하기, 필요한 데이터 준비하
     url = url_receive;
     comment = comment_receive;
     wprice = wprice_receive;
@@ -37,15 +39,13 @@ def post_shopinfo():
     price_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > ' \
                      'div.s-row.pdp-header__right > div > div:nth-child(1) > div > div > div:nth-child(2) > ' \
                      'div:nth-child(1) > div > div > h1 '
-    price = soup.select_one(price_selector).text;
-    # * img 파싱 부분은 튜터님 확인중 (임시 이미지로 대체)
-    img = 'https://a.wattpad.com/cover/66412110-352-k394450.jpg'
-    img2 = 'https://scontent-ssn1-1.xx.fbcdn.net/v/t1.0-9/p960x960/29244092_1881987471874252_4979572236735217664_o.png?_nc_cat=110&_nc_sid=85a577&_nc_ohc=RhpeUwlP1EwAX_f6psz&_nc_ht=scontent-ssn1-1.xx&oh=702026b942d126bb43748ac639414335&oe=5F72CAF3'
-    site = tldextract.extract(
-        'https://www.ssense.com/en-kr/men/product/adidas-originals/navy-trefoil-baseball-cap/5178381')
+    price = soup.select_one(price_selector).text
+    img = soup.select_one('meta[property="og:image"]')['content']
+    # suffix와 www를 제외하고 domain만 집어넣자
+    site = tldextract.extract(url).domain
 
     # * 어떤 user가 넣는지 조회하여 자신에 해당하는 정보만 가져오기 위함. (user 정보에 인덱스 걸면 금방나올듯)
-    userid = userid_receive;
+    userid = userid_receive
 
     # * title 과 desc 도 받아서 구현해놓을 것 헐..
     title1_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > ' \
@@ -54,7 +54,7 @@ def post_shopinfo():
     title2_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > ' \
                       'div.s-row.pdp-header__right > div > div:nth-child(1) > div > div > ' \
                       'div.s-column.pdp-product-title__left > div:nth-child(2) > h2 '
-    title = '브랜드:' + soup.select_one(title1_selector).text + ',상품명:' + soup.select_one(title2_selector).text;
+    title = '브랜드:' + soup.select_one(title1_selector).text + ',상품명:' + soup.select_one(title2_selector).text
 
     desc_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > ' \
                     'div.s-row.pdp-header__right > div > div:nth-child(2) > div > div > div:nth-child(2) > div > div > ' \
@@ -62,6 +62,7 @@ def post_shopinfo():
     desc = soup.select_one(desc_selector).text
 
     # * inv 를 넣는경우는 celenium을 활용해야 해야 할 수도 있음. 실제 장바구니 카트를 넣어보면서 나머지 수량을 체크함.
+    # * 해당 사이트의 지도 관련된 좌표를 넣어야 할 수도 있음. 해당 부분도 간단하게 넣어보기.
     article = {'userid': userid, 'url': url, 'title': title, 'desc': desc, 'img': img, 'site': site, 'price': price,
                'wprice': wprice, 'comment': comment}
 
@@ -74,12 +75,21 @@ def post_shopinfo():
 @app.route('/viewcard', methods=['GET'])
 def read_articles():
     # 1. mongoDB에서 _id 값을 제외한 모든 데이터 조회해오기(Read)
-    print("herehere2")
-    userid=request.args.get("userid_give")
-    print("xx:"+userid)
-    result = list(db.articles.find({'userid':userid}, {'_id': 0,'userid':0}))
+    userid = request.args.get("userid_give")
+    result = list(db.article.find({'userid': userid}, {'_id': 0, 'userid': 0}))
     # 2. articles라는 키 값으로 articles 정보 보내주기
     return jsonify({'result': 'success', 'msg': 'GET 연결되었습니다!', 'article': result})
+
+
+# POST로 수신받아 파일업로드 하기
+@app.route('/file-upload', methods=['GET', 'POST'])
+def upload_files():
+    if request.method == 'POST':
+        f = request.files['file']
+        fname = secure_filename(f.filename)
+        path = os.path.join(app.config['UPLOAD_DIR'], fname)
+        f.save(path)
+        return 'File upload complete (%s)' % path
 
 
 # ** 로그인 및 회원가입 분 **

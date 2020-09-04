@@ -1,18 +1,15 @@
 <!doctype html>
 <html lang="en">
   <head>
-
     <!-- Webpage Title -->
     <title>Hello, world!</title>
 
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
     <meta property="og:title" content="SHOP SCRAPPER!"/>
     <meta property="og:description" content="퍼스널 샵 스크랩퍼"/>
     <meta property="og:image" content="{{ url_for('static', filename='ori_image.png') }}"/>
-
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
@@ -28,8 +25,71 @@
             integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
             crossorigin="anonymous"></script>
 
+    <script src="https://cdn.ckeditor.com/ckeditor5/22.0.0/classic/ckeditor.js"></script>
+
+    <script src="templates/UploadAdapter.js" type="text/javascript"></script>
+
+    <!--UploadAdapter Class -->
+    <script>
+      class UploadAdapter {
+        constructor(loader) {
+          this.loader = loader;
+        }
+
+        upload() {
+          return this.loader.file.then(file => new Promise(((resolve, reject) => {
+            this._initRequest();
+            this._initListeners(resolve, reject, file);
+            this._sendRequest(file);
+          })))
+        }
+
+        _initRequest() {
+          const xhr = this.xhr = new XMLHttpRequest();
+          xhr.open('POST', 'http://localhost:5000/file-upload', true);
+          xhr.responseType = 'json';
+        }
+
+        _initListeners(resolve, reject, file) {
+          const xhr = this.xhr;
+          const loader = this.loader;
+          const genericErrorText = '파일을 업로드 할 수 없습니다.'
+
+          xhr.addEventListener('error', () => {
+            reject(genericErrorText)
+          })
+          xhr.addEventListener('abort', () => reject())
+          xhr.addEventListener('load', () => {
+            const response = xhr.response
+            if (!response || response.error) {
+              return reject(response && response.error ? response.error.message : genericErrorText);
+            }
+
+            resolve({
+              default: response.url //업로드된 파일 주소
+            })
+          })
+        }
+
+        _sendRequest(file) {
+          const data = new FormData()
+          data.append('upload', file)
+          this.xhr.send(data)
+        }
+      }
+    </script>
+
+      <script>
+        $(function () {
+            $('#btnSave').on('click', function (e) {
+                console.log('ckeditor content2: ' + $('#editor').text());
+                alert(editor.getData());
+            })
+        });
+    </script>
+
     <!-- 구글폰트 -->
-    <link href="https://fonts.googleapis.com/css?family=Stylish&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Nanum+Myeongjo:400" rel="stylesheet">
 
     <title> SHOP.SCRAPPER! </title>
 
@@ -49,12 +109,28 @@
                 font-weight: lighter;
             }
             .price {
-                color: gold;
+                color: blue;
                 font-weight: lighter;
             }
             .wprice {
                 color: rosybrown;
-                font-weight: bold;
+                font-weight: lighter;
+            }
+
+            .btn-danger {
+              margin-top: 2.5px;
+              padding: 2px 2px;
+              border: 1px solid #ccc;;
+              background: #EA4335;
+              transition: 0.2s ease-in-out;
+            }
+
+            #btn-post-box {
+              margin-top: 15px;
+              padding: 10px 20px;
+              border: 1px solid #ccc;;
+              background: #54C7C3;
+              transition: 0.2s ease-in-out;
             }
 
             #post-box {
@@ -64,13 +140,22 @@
                 border: black solid;
                 border-radius: 5px;
             }
+
+          #user-login-area{
+            width: 150px;
+            background: #D3D3D3;
+            border: 1px black solid;
+            border-radius: 5px;
+            float:right;
+          }
+
+
         </style>
 
     <script>
       // 로딩 후 바로 실행
       $(document).ready(function(){
                 $("#cards-box").html("");
-                showArticles();
           if ( $.cookie('mytoken') == undefined ) {
             // mytoken이라는 값으로 쿠키가 없으면, 로그인 창으로 이동시킵니다.
             alert('먼저 로그인을 해주세요')
@@ -93,6 +178,7 @@
               // 올바른 결과값을 받으면 nickname,userid를 입력해줍니다.
               $('#nickname').text(response['nickname'])
               $('#userid').text(response['userid'])
+              showArticles();
             } else{
               // 에러가 나면 메시지를 띄우고 로그인 창으로 이동합니다.
               alert(response['msg'])
@@ -113,7 +199,7 @@
       function postArticle() {
         // 1.유저가 입력한 데이터 가져오기
         let url = $("#post-url").val()
-        let comment = $("#post-comment").val()
+        let comment = editor.getData()
         let wprice = $("#post-wanted-price").val()
         let userid = $("#userid").text()
 
@@ -128,16 +214,16 @@
             } else {
               alert("서버오류");
             }
-
           }
         })
       }
 
       function showArticles() {
+        let userid_give = $("#userid").text();
         $.ajax({
           type: "GET",
-          url: "/viewcard",
-          data: {userid_give: $("#userid").text()},
+          url: "/viewcard?userid_give="+userid_give,
+          data: {},
           success: function (response) {
             if (response["result"] == "success") {
               alert(response["msg"]);
@@ -147,7 +233,6 @@
                 makeCard(articles[i]["url"],articles[i]["title"],articles[i]["desc"],articles[i]["img"],articles[i]["site"],articles[i]["price"],articles[i]["wprice"],articles[i]["comment"])
               }
             }
-            alert("ss")
           }
         })
       }
@@ -158,12 +243,12 @@
           // post-box를 가리고
           $("#post-box").hide();
           // 다시 버튼을 클릭하면, 박스 열기를 할 수 있게 텍스트 바꿔두기
-          $("#btn-post-box").text("글작성 열기");
+          $("#btn-post-box").text("DOING WRITING");
         } else {
           // 아니면(눈에 보이지 않으면) post-box를 펴라
           $("#post-box").show();
           // 다시 버튼을 클릭하면, 박스 닫기를 할 수 있게 텍스트 바꿔두기
-          $("#btn-post-box").text("글작 닫기");
+          $("#btn-post-box").text("CANCEL WRITING");
         }
       }
 
@@ -175,45 +260,68 @@
                         <a href="${url}" target="_blank" class="card-title">${title}</a>
                         <p class="card-text">${desc}</p>
                         <p class="card-text site">${site}</p>
-                        <p class="card-text site">${price}</p>
-                        <p class="card-text site">${wprice}</p>
+                        <p class="card-text price">${price}</p>
+                        <p class="card-text wprice">${wprice}</p>
                         <p class="card-text comment">${comment}</p>
                         </div>
                     </div>`;
         $("#cards-box").append(temp_html);
       }
 
-
-
+      function MyCustomUploadAdapterPlugin(editor) {
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+          return new UploadAdapter(loader)
+        }
+      }
     </script>
-
   </head>
+
   <body>
-    <p>
-    </p>
-    <h5>나의 닉네임은: <span id="nickname"></span></h5>
-    <h6>나의 아이디는: <span id="userid"></span></h6>
-    <button type="button" class="btn btn-danger" onclick="logout()">로그아웃하기</button>
-
-    <button onclick="openClose()" id="btn-post-box" type="button" class="btn btn-primary">포스팅 박스 열기</button>
-    <div id="post-box" class="form-post" style="display:none">
-      <div>
-        <div class="form-group">
-          <label for="post-url">포스트 URL</label>
-          <input id="post-url" class="form-control" placeholder="">
-        </div>
-        <div class="form-group">
-          <label for="post-comment">코멘트(html에디터 대체요망)</label>
-          <textarea id="post-comment" class="form-control" rows="2"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="post-wanted-price">희망가격</label>
-          <textarea id="post-wanted-price" class="form-control" rows="3"></textarea>
-        </div>
-        <button type="button" class="btn btn-primary" onclick="postArticle()">저장하기</button>
+  <p>
+  </p>
+  <div id="user-login-area">
+    <h6><span id="nickname"></span>(<span id="userid"></span>)
+      <button type="button" class="btn btn-danger" onclick="logout()">logout</button>
+    </h6>
+  </div>
+  <button onclick="openClose()" id="btn-post-box" type="button" class="btn btn-primary">START WRITING</button>
+  <div id="post-box" class="form-post" style="display:none">
+    <div>
+      <div class="form-group">
+        <label for="post-url">포스트 URL</label>
+        <input id="post-url" class="form-control" placeholder="">
       </div>
+      <div id="editors" class="form-group">
+        <label for="editor">코멘트</label>
+        <textarea name="content" id="editor" class="form-control" rows="7">
+         <p>This is some sample content.</p>
+        </textarea>
+      </div>
+      <div class="form-group">
+        <label for="post-wanted-price">희망가격</label>
+        <textarea id="post-wanted-price" class="form-control" rows="3"></textarea>
+      </div>
+      <button type="button" class="btn btn-primary" onclick="postArticle()">저장하기</button>
     </div>
+  </div>
 
+  <div id="cards-box" class="card-columns">
+  </div>
+
+  <script>
+    let editor;
+    ClassicEditor
+            .create(document.querySelector('#editor'), {
+             extraPlugins: [MyCustomUploadAdapterPlugin]
+            })
+            .then(newEditor => {
+              editor = newEditor;
+            })
+            .catch(error => {
+              console.error(error);
+            });
+  </script>
+  <button id="btnSave">Get text</button>
 
   </body>
 </html>

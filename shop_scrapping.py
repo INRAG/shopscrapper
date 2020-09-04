@@ -3,76 +3,46 @@ import re
 import tldextract
 from bs4 import BeautifulSoup as soup, BeautifulSoup
 from urllib.request import Request, urlopen
+from pymongo import MongoClient
+
+client = MongoClient('localhost', 27017)
+db = client.dbshopscrapper
 import urllib.request
 
 # url을 받기 위한 변수 (현재는 특정 페이지를 한정하여 스크랩핑을 한다.)
-url = 'https://ssense.com/en-kr/men/product/adidas-originals/navy-trefoil-baseball-cap/5178381'
-# url = 'https://news.naver.com/main/read.nhn?mode=LPOD&mid=sec&oid=001&aid=0011837563&isYeonhapFlash=Y&rc=N'
-# headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)AppleWebKit/537.36 (KHTML, like Gecko) '
-#                          'Chrome/73.0.3683.86 Safari/537.36'}
-#headers = {'User-Agent': 'Mozilla/5.0'}
-#data = requests.get(url, headers=headers)
+# db에 article에 저장되어있는 url 을 불러와서 시간 조건(해당 소스에 기재)과 가격조건을 가져와서 참 여부에 따라 알람을 보내는 스케쥴을 설정한다. (기본적으로는 10분)
+# 앱 푸시는 현재 구현되기 전이므로, print로 해당 조건이 맞는지까지 우선 검증한다.
+# 시간 조건에 따라 1번이상 계속 메시지를 보내는 경우가 생기므로, 조건이 충족했을 때마다 확인 체크용 데이터를 남겨서 처리한다. 우선적으로는 두번정도 보낸다.
+# 혼자가 아닌 여러명이 사용하는 경우, 사용자 (즉,앱)을 분별하여 전송을 하는 것이 필요함.
 
+# 1. DB에 있는 데이터를 조회하여, 알람을 보내기 위한 준비
+# 1-1. 보내는 대상에 대한 세분화가 필요함(알람유효기간 지난것, 이미 보낸것) but 지금은 전체로 함.
+# 1-2. 메시지를 보낼 때, 자세한 텍스트를 보내주기 위해서 대부분의 정보를 가져온다.(userid별 단말기 정보가 필요함)
+result = list(db.article.find({}, {'_id': 0}))
+print(result);
 
-# 두번째 방법
-#class AppURLopener(urllib.request.FancyURLopener):
-#    version = "App/1.7"
+for i in result:
+    # 해당 url 기반으로 price 정보를 업데이트 한다.
+    url = i['url']
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
+                                                             'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.39.132 '
+                                                             'Safari/53.36'})
+    response = urllib.request.urlopen(req).read()
+    text = response.decode('utf-8')
+    soup = BeautifulSoup(text, 'html.parser')
+    price_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > div.s-row.pdp-header__right > div > div:nth-child(1) > div > div > div:nth-child(2) > div:nth-child(1) > div > div > h1'
+    price = soup.select_one(price_selector).text;
+    price_mix = re.findall(r'[\d\.\d]+', price)
 
-#urllib._urlopener = AppURLopener()
-#output = urllib._urlopener.open(url)
-#print(output)
+    # price 정보는 주기에 따라 db에도 저장한다. (후 처리)
+    # price와 wprice 와의 관계 비교.
+    if price_mix[0] < i['wprice']:
+        print("** 충족 후 알람 보내기. **")
+        #중복메시지 반복됨에 따른 처리
+        print(i['title']+'에 대한 가격정보가 현재가격('+price_mix[0]+')이 되어 설정한 ('+i['wprice']+')보다 적게 충족되었습니다.')
 
-# 비슷한 세번째 방법
-req = urllib.request.Request(url, headers={'User-Agent' : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
-                                                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.39.132 '
-                                                          'Safari/53.36'})
-response = urllib.request.urlopen(req).read()
-text = response.decode('utf-8')
-print(text)
+        # * 앱푸쉬를 보내는 조건이므로 앱푸쉬를 보내며, 앱푸쉬를 보낸 시간을 계산하여, 앱푸쉬 기능에서 가장 최근에 보낸게 있으면 제외하도록 한다.
 
-# 타 방법으로 해보기
-#req = Request(url, headers=headers)
-#webpage = urlopen(req).read()
-#page_soup = soup(webpage, 'html.parser')
-
-# HTML을 BeautifulSoup이라는 라이브러리를 활용해 검색하기 용이한 상태로 만듦
-# soup이라는 변수에 "파싱 용이해진 html"이 담긴 상태가 됨
-# 이제 코딩을 통해 필요한 부분을 추출하면 된다.
-
-soup = BeautifulSoup(text, 'html.parser')
-
-#############################
-# select를 이용해서, 기능에 따라 불러오기
-# 사이트에 따라 크롤링 요소가 다르다. (우선 ssense기준으로 한다.)
-
-# ssense.com
-price_selector = '#wrap > div > div > div.pdp__mobile--new.pdp__redesign > div > div.pdp-mobile > div > div > div.s-row.pdp-header__right > div > div:nth-child(1) > div > div > div:nth-child(2) > div:nth-child(1) > div > div > h1'
-price = soup.select_one(price_selector).text;
-
-#soup.select('상위태그명.클래스명 > 하위태그명.클래스명')
-#print(page_soup.prettify())
-
-print('kkkkkkk1')
-print(price)
-print('kkkkkkk2')
-
-
-#carousel-slide-181 > picture > img
-#carousel-slide-198 > picture > img
-
-#text = "에러 1122 : 레퍼런스 오류\n 에러 1033: 아규먼트 오류"
-regex = re.compile("https://img.ssensemedia.com/images/")
-#pic_url = regex.search(text)
-pic_url = re.findall(r'(https://img.ssensemedia.com/images/+)', text)
-
-if pic_url != None:
-    print(pic_url)
-
-
-#pic = soup.find('image',text=re.compile('https://img.ssensemedia.com/images/'))
-site = tldextract.extract('https://www.ssense.com/en-kr/men/product/adidas-originals/navy-trefoil-baseball-cap/5178381')
-
-
-
-#print(pic)
-print(site.domain)
+    else:
+        print("** 충족하지 못하였습니다. **")
+        print(i['title'] + '에 대한 가격정보가 현재가격(' + price_mix[0] + ')이 되어 설정한 (' + i['wprice'] + ')보다 크게 충족되었습니다.')
