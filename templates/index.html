@@ -27,64 +27,7 @@
 
     <script src="https://cdn.ckeditor.com/ckeditor5/22.0.0/classic/ckeditor.js"></script>
 
-    <!--UploadAdapter Class -->
-    <script>
-      class UploadAdapter {
-        constructor(loader) {
-          this.loader = loader;
-        }
-
-        upload() {
-          return this.loader.file.then(file => new Promise(((resolve, reject) => {
-            this._initRequest();
-            this._initListeners(resolve, reject, file);
-            this._sendRequest(file);
-          })))
-        }
-
-        _initRequest() {
-          const xhr = this.xhr = new XMLHttpRequest();
-          xhr.open('POST', 'http://localhost:5000/file-upload', true);
-          xhr.responseType = 'json';
-        }
-
-        _initListeners(resolve, reject, file) {
-          const xhr = this.xhr;
-          const loader = this.loader;
-          const genericErrorText = '파일을 업로드 할 수 없습니다.'
-
-          xhr.addEventListener('error', () => {
-            reject(genericErrorText)
-          })
-          xhr.addEventListener('abort', () => reject())
-          xhr.addEventListener('load', () => {
-            const response = xhr.response
-            if (!response || response.error) {
-              return reject(response && response.error ? response.error.message : genericErrorText);
-            }
-
-            resolve({
-              default: response.url //업로드된 파일 주소
-            })
-          })
-        }
-
-        _sendRequest(file) {
-          const data = new FormData()
-          data.append('upload', file)
-          this.xhr.send(data)
-        }
-      }
-    </script>
-
-      <script>
-        $(function () {
-            $('#btnSave').on('click', function (e) {
-                console.log('ckeditor content2: ' + $('#editor').text());
-                alert(editor.getData());
-            })
-        });
-    </script>
+    <script src="{{ url_for('static', filename='UploaderAdapter.js') }}"></script>
 
     <!-- 구글폰트 -->
     <link href="https://fonts.googleapis.com/css?family=Nanum+Myeongjo:400" rel="stylesheet">
@@ -154,6 +97,7 @@
       // 로딩 후 바로 실행
       $(document).ready(function(){
                 $("#cards-box").html("");
+                $("#map-box").html("");
           if ( $.cookie('mytoken') == undefined ) {
             // mytoken이라는 값으로 쿠키가 없으면, 로그인 창으로 이동시킵니다.
             alert('먼저 로그인을 해주세요')
@@ -177,6 +121,7 @@
               $('#nickname').text(response['nickname'])
               $('#userid').text(response['userid'])
               showArticles();
+              makeMap();
             } else{
               // 에러가 나면 메시지를 띄우고 로그인 창으로 이동합니다.
               alert(response['msg'])
@@ -266,6 +211,12 @@
         $("#cards-box").append(temp_html);
       }
 
+      function makeMap() {
+        let temp_html2 = ``;
+      $("#map-box").append(temp_html2);
+      alert("wow")
+      }
+
       function MyCustomUploadAdapterPlugin(editor) {
         editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
           return new UploadAdapter(loader)
@@ -303,7 +254,8 @@
     </div>
   </div>
 
-  <div id="cards-box" class="card-columns">
+  <div id="cards-box" class="card-columns"> </div>
+  <div id="map-box" class="card-columns">
   </div>
 
   <script>
