@@ -39,6 +39,7 @@ def job():
         price = soup.select_one(price_selector).text;
         price_mix = re.findall(r'[\d\.\d]+', price)
 
+
         # price 정보는 주기에 따라 db에도 저장한다. (후 처리)
         # price와 wprice 와의 관계 비교.
         if price_mix[0] < i['wprice']:
