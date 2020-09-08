@@ -53,7 +53,7 @@ def job():
             print("** 충족하지 못하였습니다. **")
             print(i['title'] + '에 대한 가격정보가 현재가격(' + price_mix[0] + ')이 되어 설정한 (' + i['wprice'] + ')보다 크게 충족되었습니다.')
 
-
+# app.py가 아닌경우, 하단과 같은 방식으로 사용하면 계속 서버가 떠 있다.
 if __name__ == '__main__':
     schedule.every().day.at('01:02').do(job)  # 매일 09:00 마다 job 함수를 실행
     while True:
