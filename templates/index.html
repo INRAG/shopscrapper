@@ -30,7 +30,9 @@
     <script src="{{ url_for('static', filename='UploaderAdapter.js') }}"></script>
 
     <!-- 구글폰트 -->
-    <link href="https://fonts.googleapis.com/css?family=Nanum+Myeongjo:400" rel="stylesheet">
+<!--    <link href="https://fonts.googleapis.com/css?family=Nanum+Myeongjo:40" rel="stylesheet">-->
+     <link rel="stylesheet" href="//fonts.googleapis.com/earlyaccess/notosanskr.css">
+     <link rel="stylesheet" href="style.css">
 
     <title> SHOP.SCRAPPER! </title>
 
@@ -40,8 +42,12 @@
                 font-family: "Stylish", sans-serif;
             }
 
+            body {
+              background: #eee url(http://subtlepatterns.com/patterns/sativa.png);
+              font-family:'Noto Sans KR';
+            }
             .wrap {
-                width: 900px;
+                width: 500px;
                 margin: auto;
             }
 
@@ -66,20 +72,27 @@
               transition: 0.2s ease-in-out;
             }
 
+            .card-img-top {
+                width: 230px;
+                height: 100%;
+                object-fit: cover;
+            }
+
             #btn-post-box {
               margin-top: 15px;
-              padding: 10px 20px;
-              border: 1px solid #ccc;;
+              padding: 5px 5px;
+              border: 0.5px solid #aaaaaa;;
               background: #54C7C3;
               transition: 0.2s ease-in-out;
             }
 
             #post-box {
-                width: 500px;
-                margin: 20px auto;
-                padding: 50px;
-                border: black solid;
+                width: 800px;
+                margin: 10px auto;
+                padding: 20px;
+                border: 0.5px grey solid;
                 border-radius: 5px;
+                background: #eeeeee;
             }
 
           #user-login-area{
@@ -88,6 +101,14 @@
             border: 1px black solid;
             border-radius: 5px;
             float:right;
+          }
+
+          .card, .card-body {
+              border-radius:15px !important;
+          }
+
+          text {
+             font-family:'Noto Sans KR'
           }
 
 
@@ -105,6 +126,7 @@
           } else {
             // 쿠기가 있으면, 유저 정보를 불러옵니다.
             load_user_info()
+            $("#btn-post-box").text("START WRITING");
           }
       });
 
@@ -124,7 +146,7 @@
               makeMap();
             } else{
               // 에러가 나면 메시지를 띄우고 로그인 창으로 이동합니다.
-              alert(response['msg'])
+              // alert(response['msg'])
               window.location.href='/login'
             }
           }
@@ -175,13 +197,17 @@
               {
                 makeCard(articles[i]["url"],articles[i]["title"],articles[i]["desc"],articles[i]["img"],articles[i]["site"],articles[i]["price"],articles[i]["wprice"],articles[i]["comment"])
               }
+              if(articles.length <1){
+                makeCard('url 표시','타이틀 표시','상세설명표시','http://i.imgur.com/I86rTVl.jpg','사이트명','현재가격','원하는가격','코멘트')
+                $(".card-img-top").css("width",'300px');
+              }
             }
           }
         })
       }
 
       function openClose() {
-        // id 값 post-box의 display 값이 block 이면(= 눈에 보이면)
+        // id 값 post-box의 display 값이 block 이면(= 눈에 보이면
         if ($("#post-box").css("display") == "block") {
           // post-box를 가리고
           $("#post-box").hide();
@@ -198,15 +224,21 @@
       //
       function makeCard(url, title, desc, img, site, price, wprice, comment) {
         let temp_html = `<div class="card">
-                        <img class="card-img-top" src="${img}" alt="Card image cap">
-                        <div class="card-body">
-                        <a href="${url}" target="_blank" class="card-title">${title}</a>
-                        <p class="card-text">${desc}</p>
-                        <p class="card-text site">${site}</p>
-                        <p class="card-text price">${price}</p>
-                        <p class="card-text wprice">${wprice}</p>
-                        <p class="card-text comment">${comment}</p>
-                        </div>
+                         <div class="row no-gutters">
+                         <div class="col-4">
+                          <img class="card-img-top" src="${img}" alt="Card image cap">
+                         </div>
+                         <div class="col-8">
+                          <div class="card-body">
+                          <a href="${url}" target="_blank" class="card-title">${title}</a>
+                          <p class="card-text">${desc}</p>
+                          <p class="card-text site">${site}</p>
+                          <p class="card-text price">${price}</p>
+                          <p class="card-text wprice">${wprice}</p>
+                          <p class="card-text comment">${comment}</p>
+                          </div>
+                         </div>
+                         </div>
                     </div>`;
         $("#cards-box").append(temp_html);
       }
@@ -214,7 +246,6 @@
       function makeMap() {
         let temp_html2 = ``;
       $("#map-box").append(temp_html2);
-      alert("wow")
       }
 
       function MyCustomUploadAdapterPlugin(editor) {
@@ -227,13 +258,17 @@
 
   <body>
   <p>
+    <span style=" font: italic bold 2.5em/2em Georgia, serif ; margin-right: 5px ; color: forestgreen">
+    <Text> &nbsp scrapper.shop</Text>
+    </span>
+    <Text> &nbsp Personal Shop Scrapper , Available Site : sensse.com (9/3) </Text>
   </p>
   <div id="user-login-area">
     <h6><span id="nickname"></span>(<span id="userid"></span>)
       <button type="button" class="btn btn-danger" onclick="logout()">logout</button>
     </h6>
   </div>
-  <button onclick="openClose()" id="btn-post-box" type="button" class="btn btn-primary">START WRITING</button>
+  <button onclick="openClose()" id="btn-post-box" type="button" class="btn btn-primary">LOGIN CHECKING</button>
   <div id="post-box" class="form-post" style="display:none">
     <div>
       <div class="form-group">
@@ -243,7 +278,7 @@
       <div id="editors" class="form-group">
         <label for="editor">코멘트</label>
         <textarea name="content" id="editor" class="form-control" rows="7">
-         <p>This is some sample content.</p>
+         <p>간단한 코멘트를 달아주세요.</p>
         </textarea>
       </div>
       <div class="form-group">
@@ -254,8 +289,24 @@
     </div>
   </div>
 
-  <div id="cards-box" class="card-columns"> </div>
+  <div id="cards-box" class="card-columns" >
+    <div style="margin-right: 2px;"></div>
+  </div>
   <div id="map-box" class="card-columns">
+
+     <div class="card">
+            <div class="row no-gutters">
+              <div class="col-4">
+                <img src="http://pathtoprofitacademy.com/wp-content/uploads/2017/11/login.jpg" alt="" class="card-img" />
+              </div>
+              <div class="col-8">
+                <div class="card-body">
+                  <p class="card-text">This page is not login status. please login!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
   </div>
 
   <script>
@@ -271,7 +322,6 @@
               console.error(error);
             });
   </script>
-  <button id="btnSave">Get text</button>
 
   </body>
 </html>
