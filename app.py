@@ -91,7 +91,7 @@ def upload_files():
         fname = secure_filename(f.filename)
         path = os.path.join(app.config['UPLOAD_DIR'], fname)
         f.save(path)
-        return jsonify({'url': 'http://scrapper.shop/static/upload/' + fname})
+        return jsonify({'url': 'http://http://3.34.198.145/static/upload/' + fname})
         #return jsonify({'url': 'http://localhost:5000/static/upload/' + fname})
     # 로컬과 서버 환경일때 다르다
 
