@@ -174,7 +174,7 @@
           data: {url_give: url, comment_give: comment, wprice_give: wprice,userid_give: userid},
           success: function (response) { // 성공하면
             if (response["result"] == "success") {
-              alert(response["msg"]);
+              //alert(response["msg"]);
               window.location.reload();
             } else {
               alert("서버오류");
@@ -191,7 +191,7 @@
           data: {},
           success: function (response) {
             if (response["result"] == "success") {
-              alert(response["msg"]);
+              //alert(response["msg"]);
               let articles=response["article"];
               for(let i=0;i<articles.length;i++)
               {

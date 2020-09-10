@@ -56,7 +56,7 @@ def job():
 # app.py가 아닌경우, 하단과 같은 방식으로 사용하면 계속 서버가 떠 있다.
 if __name__ == '__main__':
     # 매일 09:00 마다 job 함수를 실행
-    schedule.every().day.at('02:19').do(job)
+    schedule.every().day.at('03:35').do(job)
 
     # 매 300초 마다 job 함수를 실행
     # schedule.every(300).seconds.do(job)
